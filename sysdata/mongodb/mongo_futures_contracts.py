@@ -83,6 +83,7 @@ class mongoFuturesContractData(futuresContractData):
     def get_list_of_contract_dates_for_instrument_code(
         self, instrument_code: str
     ) -> list:
+        print("MONGODB: get_list_of_contract_dates_for_instrument_code()")
         list_of_keys = self._get_all_contract_keys_for_instrument_code(instrument_code)
         list_of_split_keys = [
             get_code_and_id_from_contract_key(key) for key in list_of_keys

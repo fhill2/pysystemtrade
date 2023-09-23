@@ -38,7 +38,9 @@ class arcticFuturesMultiplePricesData(futuresMultiplePricesData):
         return self._arctic
 
     def get_list_of_instruments(self) -> list:
-        return self.arctic.get_keynames()
+        keynames = self.arctic.get_keynames()
+        print("list_of_instruments()", keynames)
+        return keynames
 
     def _get_multiple_prices_without_checking(
         self, instrument_code: str
