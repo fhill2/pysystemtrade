@@ -43,9 +43,7 @@ class arcticData(object):
         )
 
     def read(self, ident) -> pd.DataFrame:
-        print("IDENT")
         item = self.library.read(ident)
-        print(item)
         return pd.DataFrame(item.data)
 
     def write(self, ident: str, data: pd.DataFrame):

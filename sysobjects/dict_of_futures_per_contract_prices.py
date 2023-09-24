@@ -9,12 +9,12 @@ from sysobjects.contract_dates_and_expiries import listOfContractDateStr
 
 
 class dictFuturesContractFinalPrices(dict):
-    def __repr__(self):
-        object_repr = "Dict of final futures contract prices with %d contracts" % len(
-            self.keys()
-        )
-        return object_repr
-
+    # def __repr__(self):
+    #     object_repr = "Dict of final futures contract prices with %d contracts" % len(
+    #         self.keys()
+    #     )
+    #     return object_repr
+    #
     def sorted_contract_date_str(self):
         """
         Time sorted contract ids
@@ -70,13 +70,14 @@ class dictFuturesContractFinalPrices(dict):
 
 
 class dictFuturesContractVolumes(dictFuturesContractFinalPrices):
-    def __repr__(self):
-        object_repr = "Dict of futures contract volumes with %d contracts" % len(
-            self.keys()
-        )
-        return object_repr
-
-
+    pass
+    # def __repr__(self):
+    #     object_repr = "Dict of futures contract volumes with %d contracts" % len(
+    #         self.keys()
+    #     )
+    #     return object_repr
+    #
+    #
 class dictFuturesContractPrices(dict):
     """
     A dict of futures contract prices
@@ -86,12 +87,12 @@ class dictFuturesContractPrices(dict):
     We can use standard dict methods, but convenience methods are included
     """
 
-    def __repr__(self):
-        object_repr = "Dict of futures contract prices with %d contracts" % len(
-            self.keys()
-        )
-        return object_repr
-
+    # def __repr__(self):
+    #     object_repr = "Dict of futures contract prices with %d contracts" % len(
+    #         self.keys()
+    #     )
+    #     return object_repr
+    #
     def final_prices(self) -> dictFuturesContractFinalPrices:
         """
 
@@ -99,12 +100,12 @@ class dictFuturesContractPrices(dict):
         """
 
         all_contract_ids = list(self.keys())
+        print(all_contract_ids)
         final_price_dict_as_list = []
         for contract_id in all_contract_ids:
             final_prices = self[contract_id].return_final_prices()
             final_prices.name = contract_id
             final_price_dict_as_list.append((contract_id, final_prices))
-
         final_prices_dict = dictFuturesContractFinalPrices(final_price_dict_as_list)
 
         return final_prices_dict

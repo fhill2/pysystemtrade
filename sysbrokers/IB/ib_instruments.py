@@ -81,7 +81,7 @@ def ib_futures_instrument(
     :param futures_instrument_with_ib_data: instrument with .metadata suitable for IB
     :return: IBcontract
     """
-
+    print(futures_instrument_with_ib_data)
     ib_data = futures_instrument_with_ib_data.ib_data
 
     ibcontract = Future(ib_data.symbol, exchange=ib_data.exchange)

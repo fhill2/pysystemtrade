@@ -12,9 +12,16 @@ logger = logging.getLogger(__name__)
 import pandas as pd
 
 
-# TODO:
-# to handle:
+# To keep in mind
 # contractDates, in sysobjects/contract_dates_and_expiries - normal/VIX/Gas
+# ignoreWeekly? loaded from data
+
+# do we need to support multi leg contracts? and what are they?
+# also, why does rob update the expiries of the contracts in the data ?
+
+# do we need to:
+# replace midnight with notional closing time
+# everything in ib_price_client
 
 
 # this is the execution flow of sysinit/futures/seed_price_data_from_IB.py
@@ -35,9 +42,9 @@ from sysproduction.update_historical_prices import write_merged_prices_for_contr
 
 # merged / added imports
 from sysobjects.contract_dates_and_expiries import expiryDate, listOfContractDateStr
-from sysexport.simplified.seed_price_data_from_IB.ib_futures_contract_price_data import ibFuturesContractPriceData
 
 from sysobjects.futures_per_contract_prices import futuresContractPrices
+
 
 
 from sysbrokers.IB.ib_connection import connectionIB
@@ -61,21 +68,36 @@ from sysobjects.instruments import futuresInstrument
 # imports to recreates futuresContract
 from sysobjects.contract_dates_and_expiries import contractDate
 
+
+from sysobjects.contracts import futuresContract
 # all code used in execution flow from sysobjects/contracts.py
-class futuresContract(object):
-    def __init__(
-        self,
-        instrument_code: str,
-        contract_date_object: str,
-    ):
-        self.instrument_code = instrument_code
-        self.instrument_object = futuresInstrument(instrument_code)
-        self.contract_date_object = contractDate(contract_date_object)
+# class futuresContract(object):
+#     def __init__(
+#         self,
+#         instrument_code: str,
+#         contract_date_object: str,
+#     ):
+#         self.instrument_code = instrument_code
+#         self.instrument_object = futuresInstrument(instrument_code)
+#         self.contract_date_object = contractDate(contract_date_object)
+#
+#     def is_spread_contract(self):
+#         return self.contract_date.is_spread_contract
 
 # sysbrokers/IB/config/ib_instrument_config.py -> get_instrument_object_from_valid_config()
+
+# imports for write_merged_prices_for_contract()
+from sysproduction.data.prices import diagPrices, updatePrices
+from syscore.pandas.frequency import merge_data_with_different_freq
+from sysdata.futures.futures_per_contract_prices import futuresContractPriceData
+
+
+from syscore.genutils import return_another_value_if_nan
+from sysbrokers.IB.ib_instruments import NOT_REQUIRED_FOR_IB
 def get_instrument_object_from_config(instrument_code: str
 ) -> futuresInstrumentWithIBConfigData:
-    config = pd.read_csv( "sysbrokers.IB.config.ib_config_futures.csv")
+    # config = pd.read_csv( "sysbrokers.IB.config.ib_config_futures.csv")
+    config = pd.read_csv("/Users/f1/dev/app/trading/pysystemtrade/sysbrokers/IB/config/ib_config_futures.csv")
     config_row = config[config.Instrument == instrument_code]
     symbol = config_row.IBSymbol.values[0]
     exchange = config_row.IBExchange.values[0]
@@ -115,10 +137,11 @@ def _get_actual_expiry_date_given_single_contract_with_ib_metadata(futures_contr
     if futures_contract_with_ib_data.is_spread_contract():
         logger.warning("Can't find expiry for multiple leg contract here")
         raise missingContract
-
+    # print(futures_contract_with_ib_data.ib_data)
     expiry_date = ib_contracts_client.broker_get_single_contract_expiry_date(
         futures_contract_with_ib_data, allow_expired=allow_expired
     )
+    print("expiry date: ", expiry_date)
 
     expiry_date = expiryDate.from_str(expiry_date)
 
@@ -129,24 +152,21 @@ def _get_actual_expiry_date_given_single_contract_with_ib_metadata(futures_contr
 def get_prices_at_frequency(
     contract: futuresContract,
     frequency: Frequency,
-    allow_expired: bool = False,
     config_instrument,
+    allow_expired: bool = False,
+
     ):
 
     try:
-
-        # reads from CSV file
-        
-
-        futures_contract_with_ib_data = contract.new_contract_with_replaced_instrument_object(config_instrument)
+        # this code might break functionality
+        new_contract = contract.new_contract_with_replaced_instrument_object(config_instrument)
+        # print("after: ", new_contract.instrument_code, new_contract.date_str)
                 
 
-        futures_contract_with_ib_data = (
-              futures_contract_with_ib_data.update_expiry_dates_one_at_a_time_with_method(
+        contract = new_contract.update_expiry_dates_one_at_a_time_with_method(
                   _get_actual_expiry_date_given_single_contract_with_ib_metadata,
                   allow_expired=allow_expired,
               )
-          )
     except missingContract:
         logger.warning("Can't get data for %s" % str(contract))
         raise missingData
@@ -154,21 +174,21 @@ def get_prices_at_frequency(
 
     try:
         price_data = ib_price_client.broker_get_historical_futures_data_for_contract(
-            futures_contract_with_ib_data,
+            new_contract,
             bar_freq=frequency,
             allow_expired=allow_expired,
         )
     except missingData:
         logger.warning(
             "Something went wrong getting IB price data for %s"
-            % str(futures_contract_with_ib_data)
+            % str(new_contract)
         )
         raise
 
     if len(price_data) == 0:
         logger.warning(
             "No IB price data found for %s"
-            % str(futures_contract_with_ib_data)
+            % str(new_contract)
         )
         return futuresContractPrices.create_empty()
 
@@ -181,19 +201,14 @@ def get_prices_at_frequency(
 def seed_price_data_from_IB(instrument_code):
     print("===================================================")
     data = dataBlob()
-    data_broker = dataBroker(data)
-    ib_futures_contract_price_Data = ibFuturesContractPriceData
-
-    # list_of_contracts = ib_contracts_client.get_list_of_contract_dates_for_instrument_code(
-        # instrument_code, allow_expired=True
-    # )
 
     config_instrument = get_instrument_object_from_config(instrument_code)
+
+    # reqContractDetails() - get all contracts for instrument
     list_of_contracts = ib_contracts_client.broker_get_futures_contract_list(
         config_instrument, allow_expired=True
     )
-
-    listOfContractDateStr(list_of_contracts)
+    list_of_contracts = listOfContractDateStr(list_of_contracts)
 
     ## This returns yyyymmdd strings, where we have the actual expiry date
 
@@ -211,13 +226,13 @@ def seed_price_data_from_IB(instrument_code):
             update_prices = updatePrices(data)
 
             try:
-                prices = get_prices_at_frequency(contract, frequency=frequency, allow_expired=True, config_instrument=config_instrument)
+                prices = get_prices_at_frequency(contract, frequency=frequency, config_instrument=config_instrument, allow_expired=True)
             except missingData:
                 return None
 
 
             if len(prices) == 0:
-                log.warning("No price data for %s" % str(contract))
+                logger.warning("No price data for %s" % str(contract))
             else:
                 update_prices.overwrite_prices_at_frequency_for_contract(
                     contract_object=contract, frequency=frequency, new_prices=prices
@@ -225,8 +240,25 @@ def seed_price_data_from_IB(instrument_code):
 
 
 
-        write_merged_prices_for_contract(
-            data, contract_object=contract, list_of_frequencies=list_of_frequencies
+        # sysproduction/update_historical_prices -> write_merged_prices_for_contract()
+        ## note list of frequencies must have daily as last or groupby won't work with volume
+
+        assert list_of_frequencies[-1] == DAILY_PRICE_FREQ
+
+        diag_prices = diagPrices(data)
+        price_updater = updatePrices(data)
+        contract_price_data = futuresContractPriceData()
+
+        list_of_data = [
+            diag_prices.get_prices_at_frequency_for_contract_object( contract, frequency=frequency)
+            for frequency in list_of_frequencies
+        ]
+        print("frequency price data")
+
+        merged_prices = merge_data_with_different_freq(list_of_data)
+
+        price_updater.overwrite_merged_prices_for_contract(
+            contract_object=contract_object, new_prices=merged_prices
         )
 
 

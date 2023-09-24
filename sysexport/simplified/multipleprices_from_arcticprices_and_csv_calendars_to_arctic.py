@@ -8,6 +8,10 @@ We then store those multiple prices in: (depending on options)
 
 - arctic
 - .csv
+
+https://github.com/robcarver17/pysystemtrade/blob/master/docs/data.md#creating-multiple-prices-from-contract-prices
+https://github.com/robcarver17/pysystemtrade/blob/master/sysinit/futures/multipleprices_from_arcticprices_and_csv_calendars_to_arctic.py
+https://github.com/robcarver17/pysystemtrade/tree/master/data/futures/roll_calendars_csv
 """
 from syscore.constants import arg_not_supplied
 from sysobjects.dict_of_futures_per_contract_prices import (
@@ -33,33 +37,13 @@ from sysinit.futures.build_roll_calendars import adjust_to_price_series
 from sysobjects.multiple_prices import futuresMultiplePrices
 
 
-def _get_data_inputs(csv_roll_data_path, csv_multiple_data_path):
-    csv_roll_calendars = csvRollCalendarData(csv_roll_data_path)
-    arctic_individual_futures_prices = arcticFuturesContractPriceData()
-    arctic_multiple_prices = arcticFuturesMultiplePricesData()
-    csv_multiple_prices = csvFuturesMultiplePricesData(csv_multiple_data_path)
-
-    return (
-        csv_roll_calendars,
-        arctic_individual_futures_prices,
-        arctic_multiple_prices,
-        csv_multiple_prices,
-    )
-
-
 def process_multiple_prices_all_instruments(
     csv_multiple_data_path=arg_not_supplied,
     csv_roll_data_path=arg_not_supplied,
     ADD_TO_ARCTIC=True,
     ADD_TO_CSV=False,
 ):
-
-    (
-        _not_used1,
-        arctic_individual_futures_prices,
-        _not_used2,
-        _not_used3,
-    ) = _get_data_inputs(csv_roll_data_path, csv_multiple_data_path)
+    arctic_individual_futures_prices = arcticFuturesContractPriceData()
     instrument_list = (
         arctic_individual_futures_prices.get_list_of_instrument_codes_with_merged_price_data()
     )
@@ -89,12 +73,11 @@ def process_multiple_prices_single_instrument(
 
     if target_instrument_code is arg_not_supplied:
         target_instrument_code = instrument_code
-    (
-        csv_roll_calendars,
-        arctic_individual_futures_prices,
-        arctic_multiple_prices,
-        csv_multiple_prices,
-    ) = _get_data_inputs(csv_roll_data_path, csv_multiple_data_path)
+
+    csv_roll_calendars = csvRollCalendarData(csv_roll_data_path)
+    arctic_individual_futures_prices = arcticFuturesContractPriceData()
+    arctic_multiple_prices = arcticFuturesMultiplePricesData()
+    csv_multiple_prices = csvFuturesMultiplePricesData(csv_multiple_data_path)
 
     dict_of_futures_contract_prices = (
         arctic_individual_futures_prices.get_merged_prices_for_instrument(
@@ -103,12 +86,17 @@ def process_multiple_prices_single_instrument(
     )
     print("dict_of_futures_contract_prices")
     print(dict_of_futures_contract_prices)
+
     dict_of_futures_contract_closing_prices = (
         dict_of_futures_contract_prices.final_prices()
     )
+    print("dict_of_futures_contract_closing_prices")
+    print(dict_of_futures_contract_closing_prices)
 
     if roll_calendar is arg_not_supplied:
         roll_calendar = csv_roll_calendars.get_roll_calendar(instrument_code)
+    print("roll_calendar")
+    print(roll_calendar)
 
     # Add first phantom row so that the last calendar entry won't be consumed by adjust_roll_calendar()
     if roll_parameters is arg_not_supplied:
