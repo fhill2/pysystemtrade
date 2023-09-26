@@ -14,6 +14,14 @@ from pathlib import Path
 from sysdata.arctic.arctic_futures_per_contract_prices import (
     arcticFuturesContractPriceData,
 )
+from syscore.dateutils import Frequency
+import pandas as pd
+from syscore.fileutils import resolve_path_and_filename_for_package
+import os
+
+# from sysexport.simplified.seed_price_data_from_IB import seed_price_data_from_IB
+from sysinit.futures.seed_price_data_from_IB import seed_price_data_from_IB
+from sysinit.futures.rollcalendars_from_arcticprices_to_csv import build_and_write_roll_calendar
 
 now = datetime.datetime.now()
 
@@ -22,27 +30,47 @@ now = datetime.datetime.now()
 
 class TestRollCalendar():
 
-    def generate_test_data_for_pytower(self):
-        """
-            extracts data from arctic db 
-            get_merged_prices_for_instrument() is used to get data to create the roll calendars
-        """
-        prices = arcticFuturesContractPriceData()
-        instrument_codes = ["CRUDE_W"]
-        for instrument_code in instrument_codes:
-            dict_of_all_futures_contract_prices = prices.get_merged_prices_for_instrument(instrument_code)
-            dict_of_futures_contract_prices = dict_of_all_futures_contract_prices.final_prices()
-            for k, df in dict_of_futures_contract_prices.items():
-                for a,b in df.items():
-                    print(a,b)
-                # output_path = Path(f'/Users/f1/Desktop/ib_data_download/test_data/get_merged_prices_for_instrument/{now.strftime("%Y-%m-%d-%H-%M-%S")}/{instrument_code}/{k}.parquet')
-                # output_path.parent.mkdir(parents=True, exist_ok=True)
-                # print(f"Writing File - {output_path}")
-                # df.to_parquet(output_path)
+    def get_roll_calendar_instrument_codes(self):
+        filepath = resolve_path_and_filename_for_package(
+            "data.futures.csvconfig", f"rollconfig.csv" # data.futures.roll_calendars_csv
+        )
+        df = pd.read_csv(filepath, skiprows=0, skipfooter=0)
+        return list(df.Instrument)
 
-    def test_roll(self):
-        # process_multiple_prices_single_instrument("CRUDE_W")
-        build_and_write_roll_calendar_simplified("CRUDE_W")
+    def download_all_data_for_roll_calendars(self):
+        """
+            STEP 1
+        """
+        # get all instrument codes that have pre defined roll calendars
+        for instrument_code in self.get_roll_calendar_instrument_codes():
+            seed_price_data_from_IB(instrument_code)
+        
+
+    def extract_test_data_for_pytower_from_mongodb(self):
+        """
+            STEP 2: extract data from mongodb to a location that pytower reads from as input to roll calendar (tests)
+            get_merged_prices_for_instrument() is used as the data source in build_and_write_roll_calendar() 
+        """
+
+        def write_all_prices(prices, dirname, instrument_code):
+            output_root = f'/Users/f1/Desktop/ib_data_download/test_data/per_contract_prices/{now.strftime("%Y-%m-%d-%H-%M-%S")}'
+            for k, df in prices.items():
+                output_path = Path(f'{output_root}/{dirname}/{instrument_code}/{k}.parquet')
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                print(f"Writing File - {output_path}")
+                print(df)
+                df.to_parquet(output_path)
+
+
+        prices = arcticFuturesContractPriceData()
+        for instrument_code in self.get_roll_calendar_instrument_codes():
+            # class returned -> dictFuturesContractPrices
+            merged_prices = prices.get_merged_prices_for_instrument(instrument_code)
+            daily_prices = prices.get_prices_at_frequency_for_instrument(instrument_code, Frequency.Day)
+            hourly_prices = prices.get_prices_at_frequency_for_instrument(instrument_code, Frequency.Hour)
+            write_all_prices(merged_prices, "merged", instrument_code)
+            write_all_prices(daily_prices, "daily", instrument_code)
+            write_all_prices(hourly_prices, "hourly", instrument_code)
 
 
     def test_convert_to_final_prices(self):
@@ -54,24 +82,30 @@ class TestRollCalendar():
         print(dict_of_futures_contract_prices.values())
 
 
+    def generate_roll_calendars(self):
+        """
+            generates roll calendars for all instruments we have test data for
+            TODO: Before using again, this function needs to READ the 
+            because the database contents might have changed, always read the prices from the test files
+        """
+        prices_dir = "/Users/f1/dev/app/trading/pytower/pytower/tests/data/pysys/per_contract_prices/merged"
+        instrument_codes = [item for item in os.listdir(prices_dir) if os.path.isdir(os.path.join(prices_dir, item))]
+        for instrument_code in instrument_codes:
+            build_and_write_roll_calendar(
+                instrument_code=instrument_code,
+                output_datapath="/Users/f1/Desktop/ib_data_download/test_data/roll_calendars",
+                write=True,
+                check_before_writing=False, # disable prompt
 
-
-
-
-
-
-
-
-
-
-
-
-
+            )
+        
 
 test_roll = TestRollCalendar()
 # test_roll.test_roll()
-test_roll.test_convert_to_final_prices()
-# test_roll.generate_test_data_for_pytower()
+# test_roll.test_convert_to_final_prices()
+# test_roll.extract_test_data_for_pytower_from_mongodb()
+# test_roll.download_all_data_for_roll_calendars()
+test_roll.generate_roll_calendars()
 
 
 
