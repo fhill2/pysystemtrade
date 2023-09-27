@@ -1,3 +1,18 @@
+# entry points:
+
+# download data from IB
+seed_price_data_from_IB.py
+
+# create roll calendar entry point
+rollcalendars_from_articprices_to_csv.py
+
+# create multipe prices
+multipleprices_from_articprices_and_csv_calendars_to_artic.py
+
+# stitch
+adjustedprices_from_mongo_multiple_to_mongo
+
+
 # pysystemtrade
 
 Systematic futures trading in python
