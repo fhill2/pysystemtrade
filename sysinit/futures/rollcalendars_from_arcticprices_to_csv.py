@@ -49,6 +49,9 @@ def build_and_write_roll_calendar(
     dict_of_all_futures_contract_prices = prices.get_merged_prices_for_instrument(
         instrument_code
     )
+    print(dict_of_all_futures_contract_prices)
+    
+    exit()
     # { '20230101': futuresContractPrices(df), }
     dict_of_futures_contract_prices = dict_of_all_futures_contract_prices.final_prices()
 

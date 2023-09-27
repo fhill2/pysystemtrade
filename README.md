@@ -1,3 +1,4 @@
+mongod --dbpath ~/Desktop/ib_data_download/mongo
 # entry points:
 
 # download data from IB

@@ -52,6 +52,7 @@ def seed_price_data_for_contract_at_frequency(
 ):
 
     data_broker = dataBroker(data)
+    
     update_prices = updatePrices(data)
     log = contract_object.specific_log(data.log)
 
