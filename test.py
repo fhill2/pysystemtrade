@@ -1,2 +1,2 @@
-from pysystemtrade.sysinit.futures import seed_price_data_from_IB
+from pysystemtrade.sysinit.futures.seed_price_data_from_IB import seed_price_data_from_IB
 seed_price_data_from_IB("BRE")
