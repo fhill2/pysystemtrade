@@ -21,5 +21,5 @@ OPENBLAS="$(brew --prefix openblas)" MACOSX_DEPLOYMENT_TARGET=$(sw_vers -product
 # 
 
 
-pip install -r requirements.txt
-python setup.py develop
+pip install -r ./requirementsm1.txt \
+    && python ./setupm1.py develop

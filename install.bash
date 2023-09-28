@@ -4,8 +4,8 @@ rm -rf .venv \
     && pyenv global 3.8.17 \
     && python -m venv .venv \
     && source .venv/bin/activate \
-    && pip install -r requirements.txt \
-    && python setup.py develop
+    && pip install -r ./requirements.txt \
+    && python ./setup.py develop
 
 
 # m1 specific
