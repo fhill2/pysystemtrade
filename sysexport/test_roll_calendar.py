@@ -44,7 +44,6 @@ class TestRollCalendar():
         # get all instrument codes that have pre defined roll calendars
         for instrument_code in self.get_roll_calendar_instrument_codes():
             seed_price_data_from_IB(instrument_code)
-        
 
     def extract_test_data_for_pytower_from_mongodb(self):
         """
@@ -60,7 +59,6 @@ class TestRollCalendar():
                 print(f"Writing File - {output_path}")
                 print(df)
                 df.to_parquet(output_path)
-
 
         prices = arcticFuturesContractPriceData()
         for instrument_code in self.get_roll_calendar_instrument_codes():
@@ -104,8 +102,8 @@ test_roll = TestRollCalendar()
 # test_roll.test_roll()
 # test_roll.test_convert_to_final_prices()
 # test_roll.extract_test_data_for_pytower_from_mongodb()
-# test_roll.download_all_data_for_roll_calendars()
-test_roll.generate_roll_calendars()
+test_roll.download_all_data_for_roll_calendars()
+# test_roll.generate_roll_calendars()
 
 
 

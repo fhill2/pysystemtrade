@@ -48,15 +48,33 @@ class rollCalendar(pd.DataFrame):
         :param roll_parameters_object: roll parameters specific to this instrument
         :param dict_of_futures_contract_prices: dict, keys are contract date ids 'yyyymmdd'
         """
-
+        
+        
+        
         approx_calendar = generate_approximate_calendar(
             roll_parameters_object, dict_of_futures_contract_prices
         )
-
+        
+        approx_calendar.to_csv("/Users/g1/Desktop/approximate-roll-calendars/SP500_micro.csv")
+        
         adjusted_calendar = adjust_to_price_series(
             approx_calendar, dict_of_futures_contract_prices
         )
-
+        print(approx_calendar)
+        from pathlib import Path
+        
+        root = Path('~/Desktop/ib_data_download/').expanduser()
+        
+        # out = root / "SP500_micro/adjusted_roll_calendar.csv"
+        # out.parent.mkdir(parents=True, exist_ok=True)
+        # adjusted_calendar.to_csv(out)
+        
+        # out = root / "SP500_micro/approx_roll_calendar.csv"
+        # out.parent.mkdir(parents=True, exist_ok=True)
+        # approx_calendar.to_csv(out)
+        
+        
+        assert adjusted_calendar == approx_calendar
         roll_calendar = rollCalendar(adjusted_calendar)
 
         return roll_calendar
